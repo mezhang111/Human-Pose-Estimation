@@ -2,7 +2,7 @@
 log/
 logs/
 trash/
-data/
+
 .idea/
 docs/
 *.zip
