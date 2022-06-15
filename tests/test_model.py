@@ -1,12 +1,13 @@
 import torch
-from hps_core.models.dummy_model import DummyModel
+
+from hps_core.models.model import Model
 
 
 def test():
     batch_size = 1
     img_res = 224
 
-    model = DummyModel(img_res=img_res)
+    model = Model(img_res=img_res)
 
     dummy_inp = torch.rand(batch_size, 3, img_res, img_res)
     output = model(dummy_inp)

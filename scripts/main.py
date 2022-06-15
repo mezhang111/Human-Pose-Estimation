@@ -8,7 +8,8 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 sys.path.append('.')
 
-from hps_core.core.trainer import HPSTrainer
+#from hps_core.core.trainer import HPSTrainer
+from hps_core.core.mytrainer import MyTrainer
 from hps_core.core.config import update_hparams
 from hps_core.utils.train_utils import load_pretrained_model, set_seed, add_init_smpl_params_to_dict
 
@@ -42,7 +43,7 @@ def main(hparams, fast_dev_run=False):
 
     # This is where we initialize the model specific training routines
     # check HPSTrainer to see training, validation, testing loops
-    model = HPSTrainer(hparams=hparams).to(device)
+    model = MyTrainer(hparams=hparams).to(device)
 
     # TRAINING.PRETRAINED_LIT points to the checkpoint files trained using this repo
     # This has a separate cfg value since in some cases we use checkpoint files from different repos
