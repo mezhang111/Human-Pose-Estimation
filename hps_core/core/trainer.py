@@ -9,13 +9,11 @@ import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 
 from . import config
-from . import constants
 from ..losses import HMRLoss
 from ..models import SMPL
+from ..models.model import Model
 from ..utils.renderer import Renderer
-from ..models.dummy_model import DummyModel
 from ..dataset import MixedDataset, BaseDataset
-from ..utils.vis_utils import color_vertices_batch
 from ..utils.train_utils import set_seed
 from ..utils.image_utils import denormalize_images
 from ..utils.eval_utils import reconstruction_error, compute_error_verts
@@ -29,11 +27,7 @@ class HPSTrainer(pl.LightningModule):
 
         self.hparams.update(hparams)
 
-        # from ..models.hmr import HMR
-        # self.model = HMR()
-        self.model = DummyModel(
-            img_res=self.hparams.DATASET.IMG_RES,
-        )
+        self.model = Model(img_res=self.hparams.DATASET.IMG_RES)
 
         # there are many hyperparameters for the loss function
         # but in my experience default ones are the optimal values
@@ -137,8 +131,7 @@ class HPSTrainer(pl.LightningModule):
 
         # De-normalize 2D keypoints from [-1,1] to pixel space
         gt_keypoints_2d_orig = gt_keypoints_2d.clone()
-        gt_keypoints_2d_orig[:, :, :-1] = \
-            0.5 * self.hparams.DATASET.IMG_RES * (gt_keypoints_2d_orig[:, :, :-1] + 1)
+        gt_keypoints_2d_orig[:, :, :-1] = 0.5 * self.hparams.DATASET.IMG_RES * (gt_keypoints_2d_orig[:, :, :-1] + 1)
 
         # Estimate camera translation given the model joints and 2D keypoints
         # by minimizing a weighted least squares loss

@@ -6,6 +6,7 @@ import numpy as np
 from loguru import logger
 
 from .base_dataset import BaseDataset
+from .pare_dataset import PareDataset
 from ..utils.train_utils import parse_datasets_ratios
 
 
@@ -16,13 +17,16 @@ class MixedDataset(torch.utils.data.Dataset):
         hl = len(datasets_ratios) // 2
         self.dataset_list = datasets_ratios[:hl]
         self.dataset_ratios = datasets_ratios[hl:]
-
+        self.use_pare_dataset = False
         assert len(self.dataset_list) == len(self.dataset_ratios), 'Number of datasets and ratios should be equal'
 
         itw_datasets = ['mpii']
 
-        self.datasets = [BaseDataset(options, ds, **kwargs)
-                         for ds in self.dataset_list]
+        if self.use_pare_dataset:
+            self.datasets = [PareDataset(options, ds, **kwargs) for ds in self.dataset_list]
+        else:
+            self.datasets = [BaseDataset(options, ds, **kwargs) for ds in self.dataset_list]
+
         length_itw = sum([len(ds) for ds in self.datasets if ds.dataset in itw_datasets])
         self.length = max([len(ds) for ds in self.datasets])
 

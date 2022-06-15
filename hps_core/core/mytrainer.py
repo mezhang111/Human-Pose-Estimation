@@ -8,6 +8,7 @@ from loguru import logger
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 
+from smplx import SMPL as SMPL_native
 from . import config
 from . import constants
 from ..losses import HMRLoss
@@ -21,6 +22,8 @@ from ..utils.train_utils import set_seed
 from ..utils.image_utils import denormalize_images
 from ..utils.eval_utils import reconstruction_error, compute_error_verts
 from ..utils.geometry import estimate_translation, convert_weak_perspective_to_perspective
+from ..utils.geometry import estimate_translation, \
+    perspective_projection, convert_weak_perspective_to_perspective
 
 
 def add_dict(d1, d2): #add 2 dictionaries with same keys
@@ -57,6 +60,14 @@ class MyTrainer(pl.LightningModule):
             create_transl=False
         )
         self.add_module('smpl', self.smpl)
+
+        self.smpl_native = SMPL_native(
+            config.SMPL_MODEL_DIR,
+            batch_size=self.hparams.DATASET.BATCH_SIZE,
+            create_transl=False
+        )
+        self.add_module('smpl_native', self.smpl_native)
+
 
         # render resolution can be set to a higher res than the input images to inspect
         # the results better
@@ -140,8 +151,12 @@ class MyTrainer(pl.LightningModule):
 
         # De-normalize 2D keypoints from [-1,1] to pixel space
         gt_keypoints_2d_orig = gt_keypoints_2d.clone()
+        #print(gt_keypoints_2d_orig.shape) #[64,49,3]
+        #print(gt_keypoints_2d_orig)
         gt_keypoints_2d_orig[:, :, :-1] = \
             0.5 * self.hparams.DATASET.IMG_RES * (gt_keypoints_2d_orig[:, :, :-1] + 1)
+        #print(gt_keypoints_2d_orig.shape)
+        #print(self.hparams.DATASET.IMG_RES)
 
         # Estimate camera translation given the model joints and 2D keypoints
         # by minimizing a weighted least squares loss
@@ -153,6 +168,26 @@ class MyTrainer(pl.LightningModule):
             use_all_joints=True if '3dpw' in self.hparams.DATASET.DATASETS_AND_RATIOS else False,
         )
 
+        #get keypoints
+        camera_center = torch.zeros(batch_size, 2, device=self.device)
+        gt_native_model_joints = self.smpl_native(
+            betas=gt_betas,
+            body_pose=gt_pose[:, 3:],
+            global_orient=gt_pose[:, :3]
+        ).joints[:, :24, :]
+
+        gt_smpl_keypoints_2d = perspective_projection(
+            gt_native_model_joints,
+            rotation=torch.eye(3, device=self.device).unsqueeze(0).expand(batch_size, -1, -1),
+            translation=gt_cam_t,
+            focal_length=self.hparams.DATASET.FOCAL_LENGTH,
+            camera_center=camera_center,
+        )
+        # Normalize keypoints to [-1,1]
+        gt_smpl_keypoints_2d = gt_smpl_keypoints_2d / (self.hparams.DATASET.IMG_RES / 2.)
+        batch['smpl_keypoints'] = gt_smpl_keypoints_2d
+
+        
         pred = self(images)
 
         batch['gt_cam_t'] = gt_cam_t
