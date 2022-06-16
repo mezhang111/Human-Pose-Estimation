@@ -69,7 +69,7 @@ S       : 3D keypoint labels and their confidences of shape (14667, 24, 4) - onl
 python scripts/main.py --cfg configs/default.yaml
 ```
 
-This command starts training a dummy model using the hyperparameters defined in `configs/baseline.yaml` YAML file. 
+This command starts training our proposed model using the hyperparameters defined in `configs/baseline.yaml` YAML file. 
 You can find all the configurable hyperparameters in `hps_core/core/config.py`. Feel free to add more parameters if you
 feel the need to. If you want to perform a quick sanity check before starting full training, you can run:
 
