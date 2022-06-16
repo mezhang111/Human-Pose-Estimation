@@ -264,15 +264,7 @@ class MyTrainer(pl.LightningModule):
         curr_batch_size = images.shape[0]
 
         with torch.no_grad():
-            mc_run = 9
             pred = self(images)
-            for _ in range(mc_run):
-                pred2 = self(images)
-                add_dict(pred,pred2)
-
-            for key in pred.keys():
-                pred[key] = pred[key]/(mc_run+1.0)
-            
             pred_vertices = pred['smpl_vertices']
 
         gt_keypoints_3d = batch['pose_3d'].cuda()
@@ -460,12 +452,6 @@ class MyTrainer(pl.LightningModule):
         with torch.no_grad():
             mc_run = 9
             pred = self(images)
-            for _ in range(mc_run):
-                pred2 = self(images)
-                add_dict(pred,pred2)
-
-            for key in pred.keys():
-                pred[key] = pred[key]/(mc_run+1.0)
             # pred_vertices = pred['smpl_vertices']
             pred_joints = pred['smpl_joints3d']
 

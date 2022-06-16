@@ -6,7 +6,7 @@ RUN_TEST: True
 PROJECT_NAME: 'mp2022'
 DATASET:
   LOAD_TYPE: 'Base'
-  BATCH_SIZE: 52
+  BATCH_SIZE: 32
   NUM_WORKERS: 16
   PIN_MEMORY: True
   SHUFFLE_TRAIN: True
@@ -16,13 +16,13 @@ DATASET:
   IMG_RES: 224
 OPTIMIZER:
   TYPE: 'adam'
-  LR: 5e-5
+  LR: 0.0001
   WD: 0.0
 TRAINING:
   RESUME: null
   PRETRAINED: null
-  PRETRAINED_LIT: 'logs/default/tb_logs/6/checkpoints/epoch=30-step=8772.ckpt'
-  MAX_EPOCHS: 10
+  PRETRAINED_LIT: 'logs/default2/tb_logs/3/checkpoints/epoch=134-step=61964.ckpt'
+  MAX_EPOCHS: 101
   SAVE_IMAGES: True
   LOG_SAVE_INTERVAL: 1
   LOG_FREQ_TB_IMAGES: 2000
@@ -38,5 +38,5 @@ HMR:
   GT_TRAIN_WEIGHT: 1.
   LOSS_WEIGHT: 60.
 TESTING:
-  SAVE_IMAGES: true
-  SIDEVIEW: true
+  SAVE_IMAGES: True
+  SIDEVIEW: True
