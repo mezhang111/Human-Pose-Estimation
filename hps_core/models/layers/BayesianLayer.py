@@ -38,17 +38,11 @@ class BayesianLayer(torch.nn.Module):
 
         normal_distribution = torch.distributions.Normal(0, 1)
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        eps1 = normal_distribution.sample(self.weight_mu.size()).to(device)
-        eps2 = normal_distribution.sample(self.weight_mu.size()).to(device)
-        eps3 = normal_distribution.sample(self.weight_mu.size()).to(device)
-        eps = (eps1+eps2+eps3)/3.0
+        eps = normal_distribution.sample(self.weight_mu.size()).to(device)
         s_weight = self.weight_mu + torch.exp(self.weight_logsigma) * eps
 
         if self.use_bias:
-            eps1 = normal_distribution.sample(self.bias_mu.size()).to(device)
-            eps2 = normal_distribution.sample(self.bias_mu.size()).to(device)
-            eps3 = normal_distribution.sample(self.bias_mu.size()).to(device)
-            eps = (eps1+eps2+eps3)/3.0
+            eps = normal_distribution.sample(self.bias_mu.size()).to(device)
             s_bias = self.bias_mu + torch.exp(self.bias_logsigma) * eps # sapled biases
         else:
             s_bias = None
