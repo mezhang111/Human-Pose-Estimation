@@ -10,6 +10,7 @@ PW3D_ROOT = 'data/dataset_folders/3dpw'
 
 JOINT_REGRESSOR_TRAIN_EXTRA = 'data/J_regressor_extra.npy'
 SMPL_MEAN_PARAMS = 'data/smpl_mean_params.npz'
+AMASS_SAMPLE_PARAMS = 'data/amass_sample.npz'
 SMPL_MODEL_DIR = 'data/body_models/smpl'
 
 DATASET_FOLDERS = {
@@ -47,6 +48,12 @@ hparams.SEED_VALUE = -1
 # Dataset hparams
 hparams.DATASET = CN()
 hparams.DATASET.LOAD_TYPE = 'Base'
+hparams.DATASET.NOISE_FACTOR = 0.4
+hparams.DATASET.ROT_FACTOR = 30
+hparams.DATASET.SCALE_FACTOR = 0.25
+hparams.DATASET.FLIP_PROB = 0.5
+hparams.DATASET.CROP_PROB = 0.0
+hparams.DATASET.CROP_FACTOR = 0.0
 hparams.DATASET.BATCH_SIZE = 64
 hparams.DATASET.NUM_WORKERS = 8
 hparams.DATASET.PIN_MEMORY = True
@@ -57,11 +64,18 @@ hparams.DATASET.NUM_IMAGES = -1
 hparams.DATASET.TRAIN_NUM_IMAGES = -1
 hparams.DATASET.TEST_NUM_IMAGES = -1
 hparams.DATASET.IMG_RES = 224
+hparams.DATASET.USE_HEATMAPS = '' # 'hm', 'hm_soft', 'part_segm', 'attention'
 hparams.DATASET.RENDER_RES = 480
 hparams.DATASET.MESH_COLOR = 'pinkish'
 hparams.DATASET.FOCAL_LENGTH = 5000.
 hparams.DATASET.IGNORE_3D = False
+hparams.DATASET.USE_SYNTHETIC_OCCLUSION = False
+hparams.DATASET.OCC_AUG_DATASET = 'pascal'
+hparams.DATASET.USE_3D_CONF = False
+hparams.DATASET.USE_GENDER = False
 hparams.DATASET.DATASETS_AND_RATIOS = 'mpii_3dpw_0.5_0.5'
+hparams.DATASET.STAGE_DATASETS = '0+h36m_coco_0.2_0.8 2+h36m_coco_0.4_0.6'
+hparams.DATASET.NONPARAMETRIC = False
 
 # optimizer config
 hparams.OPTIMIZER = CN()

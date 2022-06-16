@@ -66,7 +66,7 @@ S       : 3D keypoint labels and their confidences of shape (14667, 24, 4) - onl
 
 ## Training
 ```shell
-python scripts/main.py --cfg configs/baseline.yaml
+python scripts/main.py --cfg configs/default.yaml
 ```
 
 This command starts training a dummy model using the hyperparameters defined in `configs/baseline.yaml` YAML file. 
@@ -74,7 +74,7 @@ You can find all the configurable hyperparameters in `hps_core/core/config.py`. 
 feel the need to. If you want to perform a quick sanity check before starting full training, you can run:
 
 ```shell
-python scripts/main.py --cfg configs/baseline.yaml --fdr
+python scripts/main.py --cfg configs/default.yaml --fdr
 ```
 
 Here `--fdr` means fast dev run. This will run one training and validation loop over a single batch to ensure everything
@@ -97,7 +97,7 @@ checkpoints from your runs. For that you need to update the `TRAINING.PRETRAINED
 `configs/baseline_test.yaml` file with the checkpoint you want to evaluate and run:
 
 ```shell
-python scripts/main.py --cfg configs/baseline_test.yaml
+python scripts/main.py --cfg configs/default_test.yaml
 ```
 
 ## Evaluation Metric

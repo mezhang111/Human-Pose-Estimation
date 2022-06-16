@@ -9,30 +9,39 @@ import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 
 from . import config
+from . import constants
 from ..losses import HMRLoss
+from ..losses import MyLoss
 from ..models import SMPL
-from ..models.model import Model
 from ..utils.renderer import Renderer
+from ..models.model import Model
 from ..dataset import MixedDataset, BaseDataset
+from ..utils.vis_utils import color_vertices_batch
 from ..utils.train_utils import set_seed
 from ..utils.image_utils import denormalize_images
 from ..utils.eval_utils import reconstruction_error, compute_error_verts
 from ..utils.geometry import estimate_translation, convert_weak_perspective_to_perspective
 
 
-class HPSTrainer(pl.LightningModule):
+def add_dict(d1, d2): #add 2 dictionaries with same keys
+    for key in d1.keys():
+        d1[key] = d1[key] + d2[key]
+
+class MyTrainer(pl.LightningModule):
 
     def __init__(self, hparams):
-        super(HPSTrainer, self).__init__()
+        super(MyTrainer, self).__init__()
 
         self.hparams.update(hparams)
 
+        # from ..models.hmr import HMR
+        # self.model = HMR()
         self.model = Model(img_res=self.hparams.DATASET.IMG_RES)
 
         # there are many hyperparameters for the loss function
         # but in my experience default ones are the optimal values
         # so you don't really need to spend time on them
-        self.loss_fn = HMRLoss(
+        self.loss_fn = MyLoss(
             shape_loss_weight=self.hparams.HMR.SHAPE_LOSS_WEIGHT,
             keypoint_loss_weight=self.hparams.HMR.KEYPOINT_LOSS_WEIGHT,
             pose_loss_weight=self.hparams.HMR.POSE_LOSS_WEIGHT,
@@ -131,7 +140,8 @@ class HPSTrainer(pl.LightningModule):
 
         # De-normalize 2D keypoints from [-1,1] to pixel space
         gt_keypoints_2d_orig = gt_keypoints_2d.clone()
-        gt_keypoints_2d_orig[:, :, :-1] = 0.5 * self.hparams.DATASET.IMG_RES * (gt_keypoints_2d_orig[:, :, :-1] + 1)
+        gt_keypoints_2d_orig[:, :, :-1] = \
+            0.5 * self.hparams.DATASET.IMG_RES * (gt_keypoints_2d_orig[:, :, :-1] + 1)
 
         # Estimate camera translation given the model joints and 2D keypoints
         # by minimizing a weighted least squares loss
@@ -219,7 +229,15 @@ class HPSTrainer(pl.LightningModule):
         curr_batch_size = images.shape[0]
 
         with torch.no_grad():
+            mc_run = 9
             pred = self(images)
+            for _ in range(mc_run):
+                pred2 = self(images)
+                add_dict(pred,pred2)
+
+            for key in pred.keys():
+                pred[key] = pred[key]/(mc_run+1.0)
+            
             pred_vertices = pred['smpl_vertices']
 
         gt_keypoints_3d = batch['pose_3d'].cuda()
@@ -405,7 +423,14 @@ class HPSTrainer(pl.LightningModule):
         dataset_names = batch['dataset_name']
 
         with torch.no_grad():
+            mc_run = 9
             pred = self(images)
+            for _ in range(mc_run):
+                pred2 = self(images)
+                add_dict(pred,pred2)
+
+            for key in pred.keys():
+                pred[key] = pred[key]/(mc_run+1.0)
             # pred_vertices = pred['smpl_vertices']
             pred_joints = pred['smpl_joints3d']
 

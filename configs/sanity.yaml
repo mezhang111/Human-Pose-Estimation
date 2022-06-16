@@ -1,19 +1,19 @@
-LOG_DIR: 'logs/baseline_test'
-EXP_NAME: 'hmr_baseline'
+LOG_DIR: 'logs/sanity_check'
+EXP_NAME: 'sanity_check'
 SEED_VALUE: -1
 METHOD: 'baseline'
-RUN_TEST: True
+RUN_TEST: False
 PROJECT_NAME: 'mp2022'
 DATASET:
   LOAD_TYPE: 'Base'
-  BATCH_SIZE: 64
+  BATCH_SIZE: 16
   NUM_WORKERS: 16
   PIN_MEMORY: True
   SHUFFLE_TRAIN: True
   TRAIN_DS: 'all'
   VAL_DS: '3dpw-val'
   NUM_IMAGES: -1
-  IMG_RES: 128
+  IMG_RES: 224
 OPTIMIZER:
   TYPE: 'adam'
   LR: 5e-5
@@ -21,15 +21,15 @@ OPTIMIZER:
 TRAINING:
   RESUME: null
   PRETRAINED: null
-  PRETRAINED_LIT: 'logs/default/tb_logs/2/checkpoints/epoch=179-step=41399.ckpt' # replace this with your ckpt file
-  MAX_EPOCHS: 101
+  PRETRAINED_LIT: null
+  MAX_EPOCHS: 1
   SAVE_IMAGES: True
-  LOG_SAVE_INTERVAL: 1
+  LOG_SAVE_INTERVAL: 50
   LOG_FREQ_TB_IMAGES: 2000
-  CHECK_VAL_EVERY_N_EPOCH: 5
+  CHECK_VAL_EVERY_N_EPOCH: 1
   RELOAD_DATALOADERS_EVERY_EPOCH: True
 HMR:
-  SHAPE_LOSS_WEIGHT: 0
+  SHAPE_LOSS_WEIGHT: 1
   KEYPOINT_LOSS_WEIGHT: 5.
   KEYPOINT_NATIVE_LOSS_WEIGHT: 5.
   POSE_LOSS_WEIGHT: 1.
@@ -38,5 +38,5 @@ HMR:
   GT_TRAIN_WEIGHT: 1.
   LOSS_WEIGHT: 60.
 TESTING:
-  SAVE_IMAGES: True
-  SIDEVIEW: True
+  SAVE_IMAGES: false
+  SIDEVIEW: true
