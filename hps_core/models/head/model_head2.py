@@ -27,7 +27,10 @@ class ModelHead2(nn.Module):
         self.deconv_layer = self._make_deconv_layer([self.deconv_dim,self.deconv_dim,self.deconv_dim])
         self.deconv_layer2 = self._make_deconv_layer([self.deconv_dim,self.deconv_dim,self.deconv_dim])
 
-        self.final_layer_cam = nn.Sequential(
+        self.final_layer_cam_shape = nn.Sequential(
+            conv3x3(self.deconv_dim, self.deconv_dim),
+            nn.LeakyReLU(inplace = True),
+            nn.BatchNorm2d(self.deconv_dim),
             conv3x3(self.deconv_dim, self.deconv_dim),
             nn.LeakyReLU(inplace = True),
             nn.BatchNorm2d(self.deconv_dim),
@@ -40,14 +43,14 @@ class ModelHead2(nn.Module):
                 conv3x3(self.deconv_dim, self.deconv_dim),
                 nn.LeakyReLU(inplace = True),
                 nn.BatchNorm2d(self.deconv_dim),
-                conv1x1(self.deconv_dim, self.deconv_dim, stride = 2)
+                conv1x1(self.deconv_dim, 256, stride = 2)
         )
 
         self.final_layer_3d = nn.Sequential(
                 conv3x3(self.deconv_dim, self.deconv_dim),
                 nn.LeakyReLU(inplace = True),
                 nn.BatchNorm2d(self.deconv_dim),
-                conv1x1(self.deconv_dim, self.deconv_dim, stride = 2)
+                conv1x1(self.deconv_dim, 256, stride = 2)
         )
 
         self.kp_layer = nn.Sequential(
@@ -62,16 +65,25 @@ class ModelHead2(nn.Module):
             (19,21), (20,22), (21,23)]
 
         self.final_layer = nn.Sequential(
-            conv3x3(self.deconv_dim*2, self.deconv_dim*2),
+            conv3x3(256*3, 256*3),
             nn.LeakyReLU(inplace = True),
-            nn.BatchNorm2d(self.deconv_dim*2),
-            conv3x3(self.deconv_dim*2, self.deconv_dim*2),
+            nn.BatchNorm2d(256*3),
+            conv3x3(256*3, 256*3),
             nn.LeakyReLU(inplace = True),
-            nn.BatchNorm2d(self.deconv_dim*2),
+            nn.BatchNorm2d(256*3),
         )
 
         self.final_layer2 = nn.Sequential(
-            conv3x3(self.deconv_dim*2, self.deconv_dim),
+            conv3x3(256*3, 256*3),
+            nn.LeakyReLU(inplace = True),
+            nn.BatchNorm2d(256*3),
+            conv3x3(256*3, 256*3),
+            nn.LeakyReLU(inplace = True),
+            nn.BatchNorm2d(256*3),
+        )
+
+        self.final_layer3 = nn.Sequential(
+            conv3x3(256*3, self.deconv_dim),
             nn.LeakyReLU(inplace = True),
             nn.BatchNorm2d(self.deconv_dim),
             conv1x1(self.deconv_dim, self.feature_dim, stride = 2)
@@ -96,13 +108,17 @@ class ModelHead2(nn.Module):
         self.poseMLP = nn.Sequential(
             nn.Linear(1024, 1024),
             nn.Dropout(0.5,inplace = True),
+            nn.Linear(1024, 1024),
+            nn.Dropout(0.5,inplace = True),
             nn.Linear(1024, self.npose, bias = False),
         )
 
         self.shapeMLP = nn.Sequential(
+            nn.Linear(self.feature_dim, 1024),
+            nn.Dropout(0.5,inplace = True),
             nn.Linear(1024, 1024),
             nn.Dropout(0.5,inplace = True),
-            nn.Linear(1024, 10, bias = False),
+            nn.Linear(1024, 10),
         )
 
         self.camMLP = nn.Sequential(
@@ -120,10 +136,10 @@ class ModelHead2(nn.Module):
         '''
         
 
-        self.fc1 = BayesianLayer(self.feature_dim + self.npose + 10 + 3, 1024, sigma = 0.0005)
-        self.drop1 = nn.Dropout(0.3,inplace = True)
-        self.fc2 = BayesianLayer(1024, 1024, sigma = 0.0005)
-        self.drop2 = nn.Dropout(0.3,inplace = True)
+        self.fc1 = nn.Linear(self.feature_dim + self.npose + 10 + 3, 1024)
+        self.drop1 = nn.Dropout(0.5,inplace = True)
+        self.fc2 = nn.Linear(1024, 1024)
+        self.drop2 = nn.Dropout(0.5,inplace = True)
 
 
         '''
@@ -317,10 +333,12 @@ class ModelHead2(nn.Module):
     def get_features(self, pfeatures):
         out = self.final_layer(pfeatures);
         out = out+pfeatures #residual cut
-        out = self.final_layer2(out);
-        return out
+        out2 = self.final_layer2(out);
+        out2 = out2 + out;
+        out2 = self.final_layer3(out2);
+        return out2
 
-    def forward(self, features, init_pose=None, init_shape=None, init_cam=None, n_iter=3, g_iter = 1, images = None):
+    def forward(self, features, init_pose=None, init_shape=None, init_cam=None, n_iter=2, g_iter = 1, images = None):
         batch_size = features.shape[0]
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -339,7 +357,7 @@ class ModelHead2(nn.Module):
 
         out3d = self.deconv_layer2(features)
         pfeatures3d = self.final_layer_3d(out3d) #[batch_size * 512 * 16 * 16]
-        pfeatures = torch.cat([out3d, out2d], 1) #[batch_size * 1024 * 16 * 16]
+        pfeatures = torch.cat([pfeatures2d, pfeatures3d, pfeatures3d*pfeatures2d], 1) #[batch_size * 1024 * 16 * 16]
         
         #p_enc = PositionalEncodingPermute2D(self.deconv_dim*2) #helpful?
         #pfeatures += p_enc(pfeatures)
@@ -354,15 +372,22 @@ class ModelHead2(nn.Module):
         pred_shape = init_shape.clone()
         pred_cam = init_cam.clone()
 
-        features_cam = self.final_layer_cam(features)
-        features_cam = self.avgpool(features_cam).view(batch_size,-1)
-        pred_cam += self.camMLP(features_cam)
+        features_cam_shape = self.final_layer_cam_shape(features)
+        features_cam_shape = self.avgpool(features_cam_shape).view(batch_size,-1)
+        pred_cam += self.camMLP(features_cam_shape)
+        pred_shape += self.shapeMLP(features_cam_shape)
 
         kl_loss = torch.tensor(0.0).to(device)
 
         #residual cuts
         #features = self.avgpool(features).view(batch_size, -1)
         #features3 = features2 + features
+        xc = self.fc1(torch.cat([features2, torch.zeros([batch_size, self.npose]).to(device), pred_shape, pred_cam], 1))
+        xc = self.drop1(xc)
+        xc = self.fc2(xc)
+        xc = self.drop2(xc)
+
+        pred_pose += self.poseMLP(xc)
 
         for i in range(n_iter):
             xc = self.fc1(torch.cat([features2, pred_pose, pred_shape, pred_cam], 1))
@@ -371,12 +396,7 @@ class ModelHead2(nn.Module):
             xc = self.drop2(xc)
 
             pred_pose += self.poseMLP(xc)
-            pred_shape += self.shapeMLP(xc)
 
-        kl_loss += self.fc1.kl_divergence()
-        kl_loss += self.fc2.kl_divergence()
-
-        kl_loss = kl_loss/12.0;
 
         '''
         pred_pose = torch.zeros(batch_size, 24, 6).to(device)

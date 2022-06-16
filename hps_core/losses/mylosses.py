@@ -106,7 +106,7 @@ class MyLoss(nn.Module):
         loss_shape *= self.shape_loss_weight*0.1
         loss_keypoints *= self.keypoint_loss_weight
         loss_keypoints_3d *= self.keypoint_loss_weight
-        loss_regr_pose *= self.pose_loss_weight*2
+        loss_regr_pose *= self.pose_loss_weight
         loss_regr_betas *= self.beta_loss_weight
         #loss_cam = ((torch.exp(-pred_cam[:, 0] * 10)) ** 2).mean()
         loss_smpl_keypoints *= 0.005
