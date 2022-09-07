@@ -1,9 +1,4 @@
-# Machine Perception - SS2022
-# Project 1: 3D Human Pose and Shape Estimation from RGB Images
-
-The goal of this project is to gain experience on implementing a human pose and shape (HPS in short) estimation model
-from RGB images. This is still a challenging problem due to complex human poses and shapes, lack of 3D labels etc. We
-expect you to come up with clever and innovative ways to improve the existing methods.
+# 3D Human Pose and Shape Estimation from RGB Images
 
 ## Getting Started
 This code has been implemented and tested with python >= 3.7.
